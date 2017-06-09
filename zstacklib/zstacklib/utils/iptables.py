@@ -319,6 +319,20 @@ class IPTables(Node):
                 target = rs[rs.index(r) + 1]
                 
         return target
+
+    @staticmethod
+    def find_ipset_in_rule(rule):
+        if isinstance(rule, IPTableRule):
+            rs = str(rule).split()
+        else:
+            rs = rule.split()
+
+        ipset = None
+        for r in rs:
+            if r == '--match-set':
+                ipset = rs[rs.index(r) + 1]
+                break
+        return ipset
     
     @staticmethod
     def is_target_in_rule(rule, target):
@@ -334,6 +348,25 @@ class IPTables(Node):
             target = None
             
         return target
+
+    def list_used_ipset_name(self):
+        def walker(rule, data):
+            if not isinstance(rule, IPTableRule):
+                return False
+
+            if self.find_ipset_in_rule(rule):
+                return True
+
+            return False
+
+        sets_name = []
+        rules = self.walk_all(walker, None)
+        for r in rules:
+            set_name = self.find_ipset_in_rule(r)
+            if set_name not in sets_name:
+                sets_name.append(set_name)
+
+        return sets_name
         
     def _reset(self):
         self.children = []
